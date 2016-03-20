@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/gbyoung/squeegee/squeegee"
+	"github.com/gbyoung/squeegee"
 	"os"
 	"os/signal"
 	"runtime"

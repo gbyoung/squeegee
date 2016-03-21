@@ -1,2 +1,2 @@
 # squeegee
-Squeegee golang spidering/scraping library and command
+Squeegee golang spidering/scraping library and cli

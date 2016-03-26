@@ -3,6 +3,7 @@ package squeegee
 import (
 	"fmt"
 	"net/url"
+    log "github.com/Sirupsen/logrus"
 )
 
 func (s *Squeegee) findUrls(pageURL string, mu MatchURL, data *[]byte, foundURLChan chan *string) {
@@ -21,11 +22,11 @@ func (s *Squeegee) findUrls(pageURL string, mu MatchURL, data *[]byte, foundURLC
 		if !found {
 			if fup.StopIfUnfound {
 				msg := fmt.Sprintf("No URLs found and StopIfUnfound Config option set for page %s\n", pageURL)
-				Log.Error(msg)
+				log.Error(msg)
 				s.StopChan <- msg
 
 			} else if fup.LogIfUnfound {
-				Log.Warning(fmt.Sprintf("No URLs found and LogIfUnfound Config option set for page %s\n", pageURL))
+				log.Warning(fmt.Sprintf("No URLs found and logIfUnfound Config option set for page %s\n", pageURL))
 			}
 		}
 	}
@@ -34,9 +35,9 @@ func (s *Squeegee) findUrls(pageURL string, mu MatchURL, data *[]byte, foundURLC
 // colsFoundAndFill - Algorithm that duplicates column values if fewer data values for a given column are
 // found relative to other columns on the page.  If only a single value is found then
 // the value will be repeated for all rows on the page.
-// If multiple values are found then a blank will be used for unfound rows.
+// If multiple values are found for a column then a blank will be used for unfound rows.
 func colsFoundAndFill(v *map[string][]string) (one bool, all bool, o [][]string) {
-    Log.Debug("Filling Columns")
+    log.Debug("Filling Columns")
 	dupChkr := make(map[string]string)
 	fndDat := false
 	for i := 0; fndDat; i++ {
@@ -68,7 +69,7 @@ func colsFoundAndFill(v *map[string][]string) (one bool, all bool, o [][]string)
 			o = append(o, row)
 		}
 	}
-    Log.Debug("Done Filling Columns")    
+    log.Debug("Done Filling Columns")    
 	return one, all, o
 }
 
@@ -86,11 +87,11 @@ func (s *Squeegee) findData(pageURL string, mu MatchURL, data *[]byte) {
 			if opt.StopIfUnfound {
 				if opt.RequireAllColumns {
 					msg := fmt.Sprintf("All Columns for found and StopIfUnfound Config option set for page %s\n", pageURL)
-					Log.Error(msg)
+					log.Error(msg)
 					s.StopChan <- msg
 				}
 			} else if opt.LogIfUnfound {
-				Log.Warning(fmt.Sprintf("All Columns for found and StopIfUnfound Config option set for page %s\n", pageURL))
+				log.Warning(fmt.Sprintf("All Columns for found and StopIfUnfound Config option set for page %s\n", pageURL))
 			}
 		} else {
 			for _, row := range dat {
@@ -103,12 +104,12 @@ func (s *Squeegee) findData(pageURL string, mu MatchURL, data *[]byte) {
 func (s *Squeegee) parseData(pageURL string, data *[]byte, foundURLChan chan *string) {
 	for _, mu := range s.Config.MatchURLs {
 		if mu.URLRegexComp.Match([]byte(pageURL)) {
-            Log.Debug("About to parse and find the URLs on the page")
+            log.Debug("About to parse and find the URLs on the page")
 			s.findUrls(pageURL, mu, data, foundURLChan)
-            Log.Debug("About to parse and find the data on the page")            
+            log.Debug("About to parse and find the data on the page")            
 			s.findData(pageURL, mu, data)
-            Log.Debug("Done Parsing the page:")
-            Log.Debug(pageURL)
+            log.Debug("Done Parsing the page:")
+            log.Debug(pageURL)
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+    log "github.com/Sirupsen/logrus"
 )
 
 // TxtWriter --
@@ -36,6 +37,6 @@ func (tw *TxtWriter) Start(outChan chan *[]string, stopChan chan string) {
 		}
 		tw.fp.WriteString((*colData)[0] + "\n")
 	}
-    Log.Debug("Got the nil on the outChan.  Sending Done to main")
+    log.Debug("Got the nil on the outChan.  Sending Done to main")
 	stopChan <- "Done"
 }

@@ -2,6 +2,7 @@ package squeegee
 
 import (
 	"sync"
+    log "github.com/Sirupsen/logrus"
 )
 
 func (s *Squeegee) incFetchingCount() {
@@ -46,8 +47,8 @@ func (s *Squeegee) putToCache(theURL string, data *[]byte) {
 	if s.Config.UsingCache && len(*data) > 512 {
 		err := s.Db.Put([]byte(theURL), *data, nil)
 		if err == nil {
-			Log.Error("Error writing to cache DB")
-			Log.Error(err.Error())
+			log.Error("Error writing to cache DB")
+			log.Error(err.Error())
 		}
 	}
 }
@@ -56,7 +57,7 @@ func (s *Squeegee) fetchOk(sf *Fetch, err error, foundURLChan chan *string) bool
 	if err == nil {
 		return true
 	}
-	Log.Warning(err.Error())
+    log.Warning(err.Error())
 	if sf.Proxy != "" {
 		lockAndUpdateCntrs(sf.Proxy, &s.badProxyMutex, &s.badProxyCounter, &s.badProxies)
 	}
@@ -71,23 +72,23 @@ func (s *Squeegee) fetchOk(sf *Fetch, err error, foundURLChan chan *string) bool
 func (s *Squeegee) Fetcher(inURLChan chan *Fetch, foundURLChan chan *string) {
 	for {
 		sf := <-inURLChan
-        Log.Debug("Starting fetch")
+        log.Debug("Starting fetch")
 		s.incFetchingCount()
 		data := s.getFromCache(sf.URL)
 		if (data == nil) || len(*data) < 512 {
-            Log.Debug("Not found in Cache")
+            log.Debug("Not found in Cache")
 			// Found nothing cached, fetch the page
 			d, err := s.URLFetcher.Fetch(sf)
-            Log.Debug("Checking if fetch OK")
+            log.Debug("Checking if fetch OK")
 			if s.fetchOk(sf, err, foundURLChan) {
 				data = d
-                Log.Debug("Putting data in cache")                
+                log.Debug("Putting data in cache")                
                 s.putToCache(sf.URL, data)                
 			}
 		}
-        Log.Debug("About to parse the data")
+        log.Debug("About to parse the data")
         s.parseData(sf.URL, data, foundURLChan)
-        Log.Debug("Ending fetch")        
+        log.Debug("Ending fetch")        
 		s.decFetchingCount()
 	}
 }

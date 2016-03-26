@@ -3,18 +3,15 @@ package squeegee
 
 import (
 	"fmt"
-	"github.com/ccding/go-logging/logging"
 	"github.com/syndtr/goleveldb/leveldb"
+    log "github.com/Sirupsen/logrus"
 	"math/rand"
 	"net/url"
-	"os"
+	"os" 
 	"sync"
 	"time"
 	//"github.com/davecgh/go-spew/spew"
 )
-
-// Log - The instantiated logger used as a global throughout squeegee
-var Log *logging.Logger
 
 // Fetch - Sent to our parallel fetchers
 type Fetch struct {
@@ -94,9 +91,9 @@ MainLoop:
 		select {
 		case furl := <-foundURLChan:
 			url, err := url.Parse(*furl)
-			Log.Debug(url.String())
+			log.Debug(url.String())
 			if err != nil {
-				Log.Warning(fmt.Sprintf("Found bad URL:  %s\n", *furl))
+				log.Warning(fmt.Sprintf("Found bad URL:  %s\n", *furl))
 				continue
 			}
 			timeoutCond = false
@@ -114,14 +111,14 @@ MainLoop:
 			s.numFetchingMutex.RUnlock()
 			if (numFetching == 0) || timeoutCond {
 				if timeoutCond {
-					Log.Error(fmt.Sprintf("We had a timeout but all our fetchers don't show as done! %d outstanding.", numFetching))
+					log.Error(fmt.Sprintf("We had a timeout but all our fetchers don't show as done! %d outstanding.", numFetching))
 				}
 				break MainLoop
 			}
 			timeoutCond = true
 		}
 	}
-	Log.Debug("Done fetching...")
+	log.Debug("Done fetching...")
 
 	//Done.  Feed all the Writers nils so they'll clean up and exit
 	for _, oc := range s.Config.OutChans {
@@ -145,9 +142,8 @@ func (s *Squeegee) StartWriters() {
 	// All of our writers have received nils to terminate them.
 	// Send our main thread the final message received from our writers
 	// through stopChan to terminate
-    Log.Debug("Got stop message from the writers.  Stopping...")
+    log.Debug("Got stop message from the writers.  Stopping...")
 	s.StopChan <- msg
-	Log.Destroy()
 }
 
 // Start - Start squeegee fetching, parsing, and writing
@@ -181,21 +177,18 @@ func (s *Squeegee) openDb() error {
 	return nil
 }
 
-func (s *Squeegee) configureLogging(debug bool) (*logging.Logger, error) {
-	var err error
-	var lg *logging.Logger
-	sync := false
-	level := logging.INFO
+func (s *Squeegee) configureLogging(debug bool) error {
 	if debug {
-		sync = true
-		level = logging.DEBUG
+        log.SetLevel(log.DebugLevel)
 	}
 	if s.Config.LogFile != "" {
-		lg, err = logging.FileLogger("squeegee", level, logging.BasicFormat, logging.DefaultTimeFormat, s.Config.LogFile, sync)
-	} else {
-		lg, err = logging.WriterLogger("squeegee", level, logging.BasicFormat, logging.DefaultTimeFormat, os.Stdout, sync)
+        fl, err := os.Create(s.Config.LogFile)
+        if err != nil {
+            return err
+        }        
+        log.SetOutput(fl)
 	}
-	return lg, err
+	return nil
 }
 
 // Init -- Initialize Squeegee.  After initialization s.Config is static and can
@@ -210,7 +203,7 @@ func (s *Squeegee) Init(confFile string, debug bool) error {
 	}
 	s.Config = config
 
-	Log, err = s.configureLogging(debug)
+	err = s.configureLogging(debug)
 	if err != nil {
 		return err
 	}
@@ -223,6 +216,6 @@ func (s *Squeegee) Init(confFile string, debug bool) error {
 	}
     s.StopChan = make(chan string)
 	s.URLFetcher = GoReqURLFetcher{}
-	Log.Info("Init:  Successfully Initialized")
+	log.Info("Init:  Successfully Initialized")
 	return nil
 }
